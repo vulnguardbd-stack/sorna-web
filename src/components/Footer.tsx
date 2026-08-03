@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { Instagram, Facebook, Send, Twitter, Youtube, Check } from 'lucide-react';
+import { Instagram, Facebook, Send, Youtube, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { cn, LABEL, OUTLINE_BUTTON } from '../lib/styles';
+import FormField from './ui/FormField';
+import Wordmark from './ui/Wordmark';
 
 export default function Footer() {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
@@ -29,10 +32,8 @@ export default function Footer() {
 
       <div className="max-w-7xl mx-auto flex flex-col items-center">
         <div className="flex flex-col items-center text-center mb-16">
-          <span className="text-[10px] tracking-[0.5em] uppercase text-white/30 mb-4 font-semibold uppercase">Get in Touch</span>
-          <div className="text-4xl md:text-6xl font-light tracking-tighter leading-none mb-4">
-             SARNA <span className="font-serif italic text-white/90">Chowdhury</span>
-          </div>
+          <span className="text-[10px] tracking-[0.5em] uppercase text-white/30 mb-4 font-semibold">Get in Touch</span>
+          <Wordmark className="text-4xl md:text-6xl mb-4" />
         </div>
 
         {/* Contact Form Section */}
@@ -61,44 +62,35 @@ export default function Footer() {
                 onSubmit={handleSubmit} 
                 className="grid grid-cols-1 md:grid-cols-2 gap-8"
               >
-                <div className="border-b border-white/10 pb-4 group focus-within:border-white transition-colors">
-                  <span className="text-[9px] uppercase tracking-[0.3em] text-white/30 block mb-2 font-bold">Full Name</span>
-                  <input 
-                    required
-                    type="text" 
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter Name"
-                    className="bg-transparent w-full outline-none text-sm font-light placeholder:text-white/10 uppercase tracking-widest"
-                  />
-                </div>
-                <div className="border-b border-white/10 pb-4 group focus-within:border-white transition-colors">
-                  <span className="text-[9px] uppercase tracking-[0.3em] text-white/30 block mb-2 font-bold">Email Address</span>
-                  <input 
-                    required
-                    type="email" 
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="Enter Email"
-                    className="bg-transparent w-full outline-none text-sm font-light placeholder:text-white/10 uppercase tracking-widest"
-                  />
-                </div>
-                <div className="md:col-span-2 border-b border-white/10 pb-4 group focus-within:border-white transition-colors">
-                  <span className="text-[9px] uppercase tracking-[0.3em] text-white/30 block mb-2 font-bold">Your Message</span>
-                  <textarea 
-                    required
-                    rows={4}
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    placeholder="Briefly describe your inquiry..."
-                    className="bg-transparent w-full outline-none text-sm font-light placeholder:text-white/10 uppercase tracking-widest resize-none"
-                  />
-                </div>
+                <FormField
+                  label="Full Name"
+                  value={formData.name}
+                  placeholder="Enter Name"
+                  onChange={(name) => setFormData({ ...formData, name })}
+                />
+                <FormField
+                  label="Email Address"
+                  type="email"
+                  value={formData.email}
+                  placeholder="Enter Email"
+                  onChange={(email) => setFormData({ ...formData, email })}
+                />
+                <FormField
+                  label="Your Message"
+                  rows={4}
+                  value={formData.message}
+                  placeholder="Briefly describe your inquiry..."
+                  onChange={(message) => setFormData({ ...formData, message })}
+                  className="md:col-span-2"
+                />
                 <div className="md:col-span-2 text-center mt-4">
                   <button 
                     disabled={status === 'submitting'}
                     type="submit" 
-                    className="px-16 py-4 border border-white/20 text-[11px] uppercase tracking-[0.4em] font-bold hover:bg-white hover:text-[#080808] transition-all disabled:opacity-50 disabled:cursor-not-allowed group flex items-center gap-4 mx-auto"
+                    className={cn(
+                      OUTLINE_BUTTON,
+                      'px-16 py-4 text-[11px] tracking-[0.4em] disabled:opacity-50 disabled:cursor-not-allowed group flex items-center gap-4 mx-auto',
+                    )}
                   >
                     {status === 'submitting' ? 'Processing...' : 'Secure Transmission'}
                     <Send size={12} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
@@ -119,15 +111,15 @@ export default function Footer() {
 
         <div className="grid md:grid-cols-3 w-full border-t border-white/10 pt-20 gap-16 text-left">
           <div className="flex flex-col gap-4">
-            <span className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-bold">Base of Operations</span>
+            <span className={LABEL}>Base of Operations</span>
             <p className="text-sm font-light text-white/80 leading-relaxed">Dhaka, Bangladesh<br /><span className="text-white/40 italic">Available for Global Directives</span></p>
           </div>
           <div className="flex flex-col gap-4">
-            <span className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-bold">Narrative Inquiries</span>
+            <span className={LABEL}>Narrative Inquiries</span>
             <p className="text-sm font-light text-white/80 leading-relaxed font-mono">hello@sarnachowdhury.com<br />management@sarna.studio</p>
           </div>
           <div className="flex flex-col gap-4">
-            <span className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-bold">Strategic Updates</span>
+            <span className={LABEL}>Strategic Updates</span>
             <div className="flex border-b border-white/20 pb-3 group focus-within:border-white transition-colors">
               <input type="email" placeholder="YOUR EMAIL" className="bg-transparent text-[11px] uppercase outline-none flex-1 placeholder:text-white/20 tracking-[0.2em]" />
               <button className="text-[10px] uppercase font-bold tracking-widest text-white/40 hover:text-white transition-colors">Subscribe</button>

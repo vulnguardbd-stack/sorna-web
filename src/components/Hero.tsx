@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Camera } from 'lucide-react';
+import MediaImage from './ui/MediaImage';
 
 export default function Hero() {
   const [image, setImage] = useState('https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=1200');
@@ -32,11 +33,10 @@ export default function Hero() {
         transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
         className="group relative w-full max-w-2xl mb-16 aspect-[16/9] overflow-hidden bg-white/5 border border-white/10"
       >
-        <img 
-          src={image} 
+        <MediaImage
+          src={image}
           alt="Sarna Chowdhury"
-          className="w-full h-full object-cover grayscale opacity-60 mix-blend-luminosity brightness-110 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-1000"
-          referrerPolicy="no-referrer"
+          className="grayscale opacity-60 mix-blend-luminosity brightness-110 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-1000"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-transparent opacity-60" />
         
