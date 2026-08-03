@@ -1,16 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Send, Sparkles } from 'lucide-react';
-import { GoogleGenAI } from '@google/genai';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-const SYSTEM_INSTRUCTION = `You are a virtual assistant for Sarna Chowdhury's personal website. 
-Your goal is to represent Sarna's brand personality: elegant, artistic, sophisticated, and helpful. 
-Sarna is a digital creator, blogger, and social media influencer known for her aesthetic style.
-When users ask about her, provide information that sounds supportive and visionary. 
-If asked about specific details you don't know, suggest they check her social feeds or reach out via the contact form.
-Keep responses concise and refined. Use Bengali if the user asks in Bengali, otherwise English.`;
+const MAX_MESSAGE_LENGTH = 2000;
 
 export default function SarnaAI() {
   const [messages, setMessages] = useState<{ role: 'user' | 'ai', text: string }[]>([
@@ -29,23 +21,24 @@ export default function SarnaAI() {
   const handleSend = async () => {
     if (!input.trim() || loading) return;
 
-    const userMsg = input;
+    const userMsg = input.trim().slice(0, MAX_MESSAGE_LENGTH);
     setInput('');
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setLoading(true);
 
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: [
-          { role: 'user', parts: [{ text: userMsg }] }
-        ],
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTION
-        }
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMsg })
       });
 
-      setMessages(prev => [...prev, { role: 'ai', text: response.text || "I'm sorry, I couldn't process that right now." }]);
+      if (!response.ok) {
+        throw new Error(`Chat request failed with status ${response.status}`);
+      }
+
+      const data: { text?: string } = await response.json();
+      setMessages(prev => [...prev, { role: 'ai', text: data.text || "I'm sorry, I couldn't process that right now." }]);
     } catch (error) {
       console.error(error);
       setMessages(prev => [...prev, { role: 'ai', text: "I'm having a little trouble connecting. Please try again later!" }]);
@@ -87,6 +80,7 @@ export default function SarnaAI() {
             <input 
               type="text" 
               value={input}
+              maxLength={MAX_MESSAGE_LENGTH}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Ask about her blog, social media, or vision..."
