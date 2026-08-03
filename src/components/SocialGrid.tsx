@@ -1,6 +1,10 @@
 import { motion } from 'motion/react';
 import { type Post } from '../types';
-import { Instagram, Facebook, Send } from 'lucide-react';
+import { revealOnScroll } from '../lib/motion';
+import { cn, HAIRLINE, OUTLINE_BUTTON } from '../lib/styles';
+import MediaImage from './ui/MediaImage';
+import PlatformIcon from './ui/PlatformIcon';
+import SectionHeading from './ui/SectionHeading';
 
 const MOCK_POSTS: Post[] = [
   { id: '1', platform: 'instagram', type: 'photo', thumbnailUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400', url: '#', caption: 'Golden hour moments.', date: '2h ago' },
@@ -16,8 +20,13 @@ export default function SocialGrid() {
     <section id="feed" className="py-32 px-10 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row items-baseline justify-between mb-20 gap-8">
         <div className="relative">
-          <span className="text-[10px] uppercase font-bold tracking-[0.4em] text-white/30 block mb-4">The Aggregation Engine</span>
-          <h2 className="font-light text-6xl md:text-8xl tracking-tighter">Unified <br /><span className="font-serif italic text-white/90">Feed</span></h2>
+          <SectionHeading
+            eyebrow="The Aggregation Engine"
+            title="Unified"
+            accent="Feed"
+            eyebrowClassName="tracking-[0.4em] font-bold"
+            titleClassName="text-6xl md:text-8xl"
+          />
           <div className="absolute -left-10 top-0 h-full w-[1px] bg-white/5 hidden xl:block" />
         </div>
         <div className="max-w-sm p-6 bg-white/5 border border-white/10">
@@ -31,27 +40,21 @@ export default function SocialGrid() {
         {MOCK_POSTS.map((post, index) => (
           <motion.div
             key={post.id}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: index * 0.1 }}
+            {...revealOnScroll(index, 30)}
             className="group relative flex flex-col cursor-pointer"
           >
             <div className="aspect-square overflow-hidden bg-white/5 border border-white/10 p-1 mb-6">
-              <img 
-                src={post.thumbnailUrl} 
-                alt={post.caption} 
-                className="w-full h-full object-cover grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700"
-                referrerPolicy="no-referrer"
+              <MediaImage
+                src={post.thumbnailUrl}
+                alt={post.caption}
+                className="grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700"
               />
             </div>
             
             <div className="flex justify-between items-start">
               <div className="flex flex-col gap-1">
                 <span className="text-[9px] uppercase tracking-[0.2em] text-white/40 flex items-center gap-2">
-                  {post.platform === 'instagram' && <Instagram size={10} />}
-                  {post.platform === 'facebook' && <Facebook size={10} />}
-                  {post.platform === 'tiktok' && <Send size={10} className="rotate-[-45deg]" />}
+                  <PlatformIcon platform={post.platform} />
                   {post.platform} narrative
                 </span>
                 <p className="text-sm font-serif italic text-white/80 line-clamp-1">{post.caption}</p>
@@ -63,11 +66,11 @@ export default function SocialGrid() {
       </div>
       
       <div className="mt-24 flex items-center justify-center gap-4">
-        <div className="h-px flex-1 bg-white/5" />
-        <button className="px-10 py-3 border border-white/20 text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-white hover:text-[#080808] transition-all">
+        <div className={cn(HAIRLINE, 'flex-1')} />
+        <button className={cn(OUTLINE_BUTTON, 'px-10 py-3')}>
           Expand Archive
         </button>
-        <div className="h-px flex-1 bg-white/5" />
+        <div className={cn(HAIRLINE, 'flex-1')} />
       </div>
     </section>
   );
