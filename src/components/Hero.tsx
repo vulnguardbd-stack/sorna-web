@@ -2,26 +2,58 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Camera } from 'lucide-react';
 
+const DEFAULT_IMAGE =
+  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=1200';
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+
+function isAllowedImageDataUrl(value: string) {
+  return ALLOWED_IMAGE_TYPES.some((type) => value.startsWith(`data:${type};base64,`));
+}
+
 export default function Hero() {
-  const [image, setImage] = useState('https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=1200');
+  const [image, setImage] = useState(DEFAULT_IMAGE);
+  const [uploadError, setUploadError] = useState('');
 
   // Load saved image from localStorage on mount
   useEffect(() => {
     const savedImage = localStorage.getItem('sarna_profile_photo');
-    if (savedImage) setImage(savedImage);
+    if (savedImage && isAllowedImageDataUrl(savedImage)) {
+      setImage(savedImage);
+    } else if (savedImage) {
+      localStorage.removeItem('sarna_profile_photo');
+    }
   }, []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setImage(base64String);
-        localStorage.setItem('sarna_profile_photo', base64String);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setUploadError('Please choose a JPEG, PNG, WebP or GIF image.');
+      return;
     }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setUploadError('Images must be 2 MB or smaller.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      if (!isAllowedImageDataUrl(base64String)) {
+        setUploadError('That file could not be read as an image.');
+        return;
+      }
+      setUploadError('');
+      setImage(base64String);
+      try {
+        localStorage.setItem('sarna_profile_photo', base64String);
+      } catch {
+        setUploadError('The image is too large to save locally.');
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -42,13 +74,24 @@ export default function Hero() {
         
         {/* Upload Overlay */}
         <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-          <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+          <input
+            type="file"
+            accept={ALLOWED_IMAGE_TYPES.join(',')}
+            className="hidden"
+            onChange={handleImageUpload}
+          />
           <div className="flex flex-col items-center gap-2">
             <Camera className="text-white" size={32} />
             <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-white">Upload New Portrait</span>
           </div>
         </label>
       </motion.div>
+
+      {uploadError && (
+        <p className="-mt-12 mb-12 text-[10px] uppercase tracking-[0.3em] text-red-400">
+          {uploadError}
+        </p>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 40 }}
