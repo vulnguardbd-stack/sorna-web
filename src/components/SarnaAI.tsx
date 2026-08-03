@@ -1,9 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Send, Sparkles } from 'lucide-react';
+import { Send, Sparkles, AlertTriangle } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
+import { reportError } from '../lib/errors';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let client: GoogleGenAI | null = null;
+
+// Constructed lazily so a missing key surfaces as an in-chat error instead of
+// throwing while the module is evaluated and blanking the whole page.
+function getClient(): GoogleGenAI {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('The AI guide is not configured: GEMINI_API_KEY is missing.');
+  }
+  if (!client) client = new GoogleGenAI({ apiKey });
+  return client;
+}
 
 const SYSTEM_INSTRUCTION = `You are a virtual assistant for Sarna Chowdhury's personal website. 
 Your goal is to represent Sarna's brand personality: elegant, artistic, sophisticated, and helpful. 
@@ -18,24 +30,23 @@ export default function SarnaAI() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastPrompt, setLastPrompt] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, loading, error]);
 
-  const handleSend = async () => {
-    if (!input.trim() || loading) return;
-
-    const userMsg = input;
-    setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+  const send = async (userMsg: string) => {
+    setError(null);
+    setLastPrompt(userMsg);
     setLoading(true);
 
     try {
-      const response = await ai.models.generateContent({
+      const response = await getClient().models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: [
           { role: 'user', parts: [{ text: userMsg }] }
@@ -45,13 +56,30 @@ export default function SarnaAI() {
         }
       });
 
-      setMessages(prev => [...prev, { role: 'ai', text: response.text || "I'm sorry, I couldn't process that right now." }]);
-    } catch (error) {
-      console.error(error);
-      setMessages(prev => [...prev, { role: 'ai', text: "I'm having a little trouble connecting. Please try again later!" }]);
+      const text = response.text?.trim();
+      if (!text) {
+        throw new Error('The AI guide returned an empty response.');
+      }
+
+      setMessages(prev => [...prev, { role: 'ai', text }]);
+    } catch (err) {
+      setError(reportError('SarnaAI.generateContent', err));
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSend = () => {
+    const userMsg = input.trim();
+    if (!userMsg || loading) return;
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    void send(userMsg);
+  };
+
+  const handleRetry = () => {
+    if (!lastPrompt || loading) return;
+    void send(lastPrompt);
   };
 
   return (
@@ -81,6 +109,26 @@ export default function SarnaAI() {
               </div>
             ))}
             {loading && <div className="text-xs italic opacity-50 px-4 animate-pulse">Assistant is thinking...</div>}
+            {error && (
+              <div
+                role="alert"
+                className="self-start max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed bg-red-500/10 border border-red-500/30 flex flex-col gap-3"
+              >
+                <span className="flex items-start gap-2">
+                  <AlertTriangle size={16} className="mt-[2px] shrink-0 text-red-400" />
+                  <span className="break-words">{error}</span>
+                </span>
+                {lastPrompt && (
+                  <button
+                    onClick={handleRetry}
+                    disabled={loading}
+                    className="self-start text-[10px] uppercase tracking-[0.2em] font-bold border-b border-red-400/40 hover:border-red-400 transition-colors disabled:opacity-40"
+                  >
+                    Retry
+                  </button>
+                )}
+              </div>
+            )}
           </div>
           
           <div className="p-4 border-t border-[#f5f2ed]/10 flex gap-2">
@@ -94,7 +142,9 @@ export default function SarnaAI() {
             />
             <button 
               onClick={handleSend}
-              className="p-3 bg-[#f5f2ed] text-[#1a1a1a] rounded-full hover:scale-110 transition-transform"
+              disabled={loading || !input.trim()}
+              aria-label="Send message"
+              className="p-3 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 bg-[#f5f2ed] text-[#1a1a1a] rounded-full hover:scale-110 transition-transform"
             >
               <Send size={18} />
             </button>
