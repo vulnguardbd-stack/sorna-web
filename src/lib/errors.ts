@@ -5,13 +5,12 @@
 
 /** Normalizes an unknown thrown value into a human readable message. */
 export function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message || error.name || String(error);
+  if (error instanceof Error && error.message) return error.message;
   if (typeof error === 'string' && error) return error;
   try {
-    // JSON.stringify returns undefined for undefined/symbol/function values,
-    // and '{}' for values whose own properties are all non-enumerable.
+    // JSON.stringify returns undefined for undefined/symbol/function values.
     const json = JSON.stringify(error);
-    if (json !== undefined && json !== '{}') return json;
+    if (json !== undefined) return json;
   } catch {
     // fall through
   }
