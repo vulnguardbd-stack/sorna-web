@@ -8,10 +8,13 @@ export function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) return error.message;
   if (typeof error === 'string' && error) return error;
   try {
-    return JSON.stringify(error);
+    // JSON.stringify returns undefined for undefined/symbol/function values.
+    const json = JSON.stringify(error);
+    if (json !== undefined) return json;
   } catch {
-    return String(error);
+    // fall through
   }
+  return String(error);
 }
 
 /** Logs an error with a stable context prefix so failures are never invisible. */

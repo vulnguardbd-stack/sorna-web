@@ -80,6 +80,11 @@ export default function Hero() {
           onError={() => {
             if (image === DEFAULT_IMAGE) return;
             reportError('Hero.image', new Error('Portrait failed to load, falling back to the default image.'));
+            try {
+              localStorage.removeItem(STORAGE_KEY);
+            } catch (err) {
+              reportError('Hero.clearSavedPhoto', err);
+            }
             setImage(DEFAULT_IMAGE);
           }}
         />
