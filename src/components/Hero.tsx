@@ -1,26 +1,66 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Camera } from 'lucide-react';
+import { Camera, AlertTriangle } from 'lucide-react';
+import { getErrorMessage, reportError } from '../lib/errors';
+
+const STORAGE_KEY = 'sarna_profile_photo';
+const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=1200';
 
 export default function Hero() {
-  const [image, setImage] = useState('https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=1200');
+  const [image, setImage] = useState(DEFAULT_IMAGE);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // Load saved image from localStorage on mount
+  // Load saved image from localStorage on mount. Storage access throws in
+  // private-browsing / blocked-cookie modes, so failures must not break render.
   useEffect(() => {
-    const savedImage = localStorage.getItem('sarna_profile_photo');
-    if (savedImage) setImage(savedImage);
+    try {
+      const savedImage = localStorage.getItem(STORAGE_KEY);
+      if (savedImage) setImage(savedImage);
+    } catch (err) {
+      reportError('Hero.loadSavedPhoto', err);
+    }
   }, []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setImage(base64String);
-        localStorage.setItem('sarna_profile_photo', base64String);
-      };
+    if (!file) return;
+
+    setUploadError(null);
+
+    if (!file.type.startsWith('image/')) {
+      setUploadError('That file is not an image. Please choose a JPG, PNG, or WebP file.');
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onerror = () => {
+      setUploadError(
+        reportError('Hero.readPhoto', reader.error ?? new Error('The selected image could not be read.')),
+      );
+    };
+
+    reader.onload = () => {
+      const base64String = typeof reader.result === 'string' ? reader.result : null;
+      if (!base64String) {
+        setUploadError(reportError('Hero.readPhoto', new Error('The selected image could not be read.')));
+        return;
+      }
+
+      setImage(base64String);
+
+      try {
+        localStorage.setItem(STORAGE_KEY, base64String);
+      } catch (err) {
+        reportError('Hero.savePhoto', err);
+        setUploadError(`Portrait updated for this visit only \u2014 it could not be saved: ${getErrorMessage(err)}`);
+      }
+    };
+
+    try {
       reader.readAsDataURL(file);
+    } catch (err) {
+      setUploadError(reportError('Hero.readPhoto', err));
     }
   };
 
@@ -37,6 +77,16 @@ export default function Hero() {
           alt="Sarna Chowdhury"
           className="w-full h-full object-cover grayscale opacity-60 mix-blend-luminosity brightness-110 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-1000"
           referrerPolicy="no-referrer"
+          onError={() => {
+            if (image === DEFAULT_IMAGE) return;
+            reportError('Hero.image', new Error('Portrait failed to load, falling back to the default image.'));
+            try {
+              localStorage.removeItem(STORAGE_KEY);
+            } catch (err) {
+              reportError('Hero.clearSavedPhoto', err);
+            }
+            setImage(DEFAULT_IMAGE);
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-transparent opacity-60" />
         
@@ -49,6 +99,16 @@ export default function Hero() {
           </div>
         </label>
       </motion.div>
+
+      {uploadError && (
+        <p
+          role="alert"
+          className="-mt-12 mb-12 max-w-xl text-[10px] uppercase tracking-[0.2em] text-red-400 leading-relaxed flex items-center gap-2 justify-center"
+        >
+          <AlertTriangle size={14} className="shrink-0" />
+          {uploadError}
+        </p>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 40 }}

@@ -1,21 +1,38 @@
 import React, { useState } from 'react';
-import { Instagram, Facebook, Send, Twitter, Youtube, Check } from 'lucide-react';
+import { Instagram, Facebook, Send, Youtube, Check, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { reportError } from '../lib/errors';
+
+// Stand-in for the real contact endpoint; kept async so failures are surfaced
+// through the same path a network call would take.
+async function submitContactForm(data: { name: string; email: string; message: string }) {
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  if (!data.name.trim() || !data.email.trim() || !data.message.trim()) {
+    throw new Error('Please fill in your name, email, and message before sending.');
+  }
+}
 
 export default function Footer() {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success'>('idle');
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setStatus('submitting');
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
+    try {
+      await submitContactForm(formData);
+    } catch (err) {
+      setError(reportError('Footer.submitContactForm', err));
+      setStatus('idle');
+      return;
+    }
+
     setStatus('success');
     setFormData({ name: '', email: '', message: '' });
-    
+
     // Reset status after 5 seconds
     setTimeout(() => setStatus('idle'), 5000);
   };
@@ -58,9 +75,18 @@ export default function Footer() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onSubmit={handleSubmit} 
+                onSubmit={(e) => { void handleSubmit(e); }}
                 className="grid grid-cols-1 md:grid-cols-2 gap-8"
               >
+                {error && (
+                  <p
+                    role="alert"
+                    className="md:col-span-2 flex items-center gap-3 text-[10px] uppercase tracking-[0.2em] text-red-400 leading-relaxed"
+                  >
+                    <AlertTriangle size={14} className="shrink-0" />
+                    {error}
+                  </p>
+                )}
                 <div className="border-b border-white/10 pb-4 group focus-within:border-white transition-colors">
                   <span className="text-[9px] uppercase tracking-[0.3em] text-white/30 block mb-2 font-bold">Full Name</span>
                   <input 

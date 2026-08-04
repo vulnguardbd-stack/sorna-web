@@ -9,18 +9,19 @@ import SocialGrid from './components/SocialGrid';
 import BlogPreview from './components/BlogPreview';
 import SarnaAI from './components/SarnaAI';
 import Footer from './components/Footer';
+import ErrorBoundary from './components/ErrorBoundary';
 
 export default function App() {
   return (
     <div className="min-h-screen bg-[#080808] text-[#f4f4f4] selection:bg-[#f4f4f4] selection:text-[#080808] font-sans antialiased">
-      <Navbar />
+      <ErrorBoundary name="Navbar"><Navbar /></ErrorBoundary>
       <main>
-        <Hero />
-        <SocialGrid />
-        <SarnaAI />
-        <BlogPreview />
+        <ErrorBoundary name="Hero"><Hero /></ErrorBoundary>
+        <ErrorBoundary name="SocialGrid"><SocialGrid /></ErrorBoundary>
+        <ErrorBoundary name="SarnaAI"><SarnaAI /></ErrorBoundary>
+        <ErrorBoundary name="BlogPreview"><BlogPreview /></ErrorBoundary>
       </main>
-      <Footer />
+      <ErrorBoundary name="Footer"><Footer /></ErrorBoundary>
     </div>
   );
 }
