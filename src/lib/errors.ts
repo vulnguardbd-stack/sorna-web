@@ -15,6 +15,15 @@ export function getErrorMessage(error: unknown): string {
   } catch {
     // fall through
   }
+
+  // If the object has no enumerable properties (JSON.stringify -> '{}')
+  // prefer returning the constructor name (e.g. 'MyError') where helpful.
+  if (error && typeof error === 'object') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ctor = (error as any).constructor?.name;
+    if (ctor && ctor !== 'Object') return ctor;
+  }
+
   return String(error);
 }
 
